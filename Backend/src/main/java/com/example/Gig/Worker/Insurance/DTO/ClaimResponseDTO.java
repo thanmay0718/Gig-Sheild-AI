@@ -1,24 +1,32 @@
 package com.example.Gig.Worker.Insurance.DTO;
-
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
-@Data  // generates proper getters, setters, equals, hashCode, toString
+@Data
 public class ClaimResponseDTO {
 
+
     private Long id;
-    private Long workerId;
-    private Long policyId;
-    private String description;
-    private double amount;
-    private String location;
-    private String status;        // "PENDING", "APPROVED", "REJECTED"
+    private String status;
     private boolean fraudFlag;
-    private LocalDateTime claimDate;
     private LocalDateTime updatedAt;
 
-    public void setDisruptionType(String disruptionType) {
+    public void setWorkerId(Long workerId) {
+    }
 
+    public void setPolicyId(Long policyId) {
+    }
+
+    public void setDescription(String description) {
+
+    }
+
+    public void setAmount(double amount) {
+    }
+
+    public void setLocation(String location) {
+    }
+
+    public void setClaimDate(LocalDateTime claimDate) {
     }
 }

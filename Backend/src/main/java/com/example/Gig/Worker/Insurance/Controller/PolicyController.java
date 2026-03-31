@@ -1,50 +1,57 @@
 package com.example.Gig.Worker.Insurance.Controller;
 
 import com.example.Gig.Worker.Insurance.DTO.PolicyRequestDTO;
-import com.example.Gig.Worker.Insurance.DTO.PolicyResponseDTO;
-import com.example.Gig.Worker.Insurance.Service.PolicyServiceImpl;
+import com.example.Gig.Worker.Insurance.Service.PolicyService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/policies")
-@CrossOrigin(origins = {"http://localhost:9091", "http://localhost:5173", "http://localhost:3000"})
+@RequestMapping("/api/v1/policies")
 public class PolicyController {
 
-    private final PolicyServiceImpl policyService;
+    private final PolicyService policyService;
 
-    public PolicyController(PolicyServiceImpl policyService) {
+    public PolicyController(PolicyService policyService) {
         this.policyService = policyService;
     }
 
-    // POST /policies — create new weekly policy
+    // POST /api/v1/policies
     @PostMapping
-    public ResponseEntity<PolicyResponseDTO> createPolicy(
-            @RequestBody PolicyRequestDTO request) {
-        return ResponseEntity.ok(policyService.createPolicy(request));
+    public ResponseEntity<?> createPolicy(@Valid @RequestBody PolicyRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(policyService.createPolicy(request));
     }
 
-    // GET /policies — all policies (admin dashboard)
+    // GET /api/v1/policies
     @GetMapping
-    public ResponseEntity<List<PolicyResponseDTO>> getAllPolicies() {
+    public ResponseEntity<?> getAllPolicies() {
         return ResponseEntity.ok(policyService.getAllPolicies());
     }
 
-    // GET /policies/worker/{workerId} — worker's own policies
-    @GetMapping("/worker/{workerId}")
-    public ResponseEntity<List<PolicyResponseDTO>> getPolicies(
-            @PathVariable Long workerId) {
+    // GET /api/v1/policies/{id}
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPolicyById(@PathVariable Long id) {
+        return ResponseEntity.ok(policyService.getPolicyById(id));
+    }
+
+    // GET /api/v1/policies?workerId=123
+    @GetMapping(params = "workerId")
+    public ResponseEntity<?> getPoliciesByWorker(@RequestParam Long workerId) {
         return ResponseEntity.ok(policyService.getPoliciesByWorker(workerId));
     }
 
-    // PUT /policies/{id}/status — admin cancels or expires a policy
-    @PutMapping("/{id}/status")
-    public ResponseEntity<PolicyResponseDTO> updateStatus(
-            @PathVariable Long id,
-            @RequestBody java.util.Map<String, String> body) {
-        return ResponseEntity.ok(
-                policyService.updatePolicyStatus(id, body.get("status")));
+    // PUT /api/v1/policies/{id}
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updatePolicy(@PathVariable Long id,
+                                          @Valid @RequestBody PolicyRequestDTO dto) {
+        return ResponseEntity.ok(policyService.updatePolicy(id, dto));
+    }
+
+    // DELETE /api/v1/policies/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deletePolicy(@PathVariable Long id) {
+        policyService.deletePolicy(id);
+        return ResponseEntity.noContent().build();
     }
 }

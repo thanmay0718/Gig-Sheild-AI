@@ -1,152 +1,158 @@
 package com.example.Gig.Worker.Insurance.Controller;
 
-import com.example.Gig.Worker.Insurance.DTO.LoginRequestDTO;
 import com.example.Gig.Worker.Insurance.DTO.RegisterRequestDTO;
-import com.example.Gig.Worker.Insurance.Model.User;
-import com.example.Gig.Worker.Insurance.Model.Worker;
-import com.example.Gig.Worker.Insurance.Repository.UserRepository;
-import com.example.Gig.Worker.Insurance.Repository.WorkerRepository;
+import com.example.Gig.Worker.Insurance.Service.AuthService;
 import com.example.Gig.Worker.Insurance.security.JwtUtil;
+import com.example.Gig.Worker.Insurance.security.request.LoginRequestDTO;
 
-import org.springframework.http.HttpStatus;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
-@RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://localhost:9091", "http://localhost:5173", "http://localhost:3000"})
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:9091", allowCredentials = "true")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final WorkerRepository workerRepository;
+    private final AuthService authService;
     private final JwtUtil jwtUtil;
-    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+    private final AuthenticationManager authenticationManager;
 
-    public AuthController(UserRepository userRepository,
-                          WorkerRepository workerRepository,
-                          JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.workerRepository = workerRepository;
+    public AuthController(AuthService authService,
+                          JwtUtil jwtUtil,
+                          AuthenticationManager authenticationManager) {
+        this.authService = authService;
         this.jwtUtil = jwtUtil;
+        this.authenticationManager = authenticationManager;
     }
 
-    // ─── LOGIN ────────────────────────────────────────────────────────────────
-    @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequestDTO request) {
-        Map<String, Object> response = new HashMap<>();
-
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            response.put("error", "Email is required");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        Optional<User> userOptional = userRepository.findByEmail(request.getEmail().toLowerCase().trim());
-        if (userOptional.isEmpty()) {
-            response.put("error", "User not found");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        User user = userOptional.get();
-
-        if (user.getPassword() == null || !encoder.matches(request.getPassword(), user.getPassword())) {
-            response.put("error", "Invalid password");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        // ── FIX: always return role as UPPERCASE so frontend routing works ──
-        // Frontend checks: resolvedRole === "ADMIN" ? "/admin" : "/worker"
-        // If DB has "admin" (lowercase), routing breaks → always force toUpperCase()
-        String role = user.getRole() != null
-                ? user.getRole().toUpperCase().trim()
-                : "WORKER";
-
-        String token = jwtUtil.generateToken(user.getEmail());
-
-        Long workerId = null;
-        String name = user.getEmail();
-
-        // Only look for worker profile if role is WORKER
-        if ("WORKER".equals(role)) {
-            Optional<Worker> workerOptional = workerRepository.findByUserId(user.getId());
-            if (workerOptional.isPresent()) {
-                workerId = workerOptional.get().getId();
-                if (workerOptional.get().getName() != null && !workerOptional.get().getName().isBlank()) {
-                    name = workerOptional.get().getName();
-                }
-            }
-        } else {
-            // ADMIN — use email as name
-            name = user.getEmail();
-        }
-
-        response.put("token", token);
-        response.put("role", role);          // ALWAYS uppercase: "ADMIN" or "WORKER"
-        response.put("email", user.getEmail());
-        response.put("name", name);
-        response.put("workerId", workerId);  // null for ADMIN, Long for WORKER
-
-        return ResponseEntity.ok(response);
-    }
-
-    // ─── REGISTER ─────────────────────────────────────────────────────────────
+    // ✅ REGISTER — now uses RegisterRequestDTO (has password)
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequestDTO request) {
-        Map<String, Object> response = new HashMap<>();
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request) {
+        return ResponseEntity.ok(authService.register(request));
+    }
 
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            response.put("error", "Email is required");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    // ✅ LOGIN
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO request,
+                                   HttpServletResponse response) {
+
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail().toLowerCase(),
+                        request.getPassword()
+                )
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // ✅ FIX: use service return
+        String accessToken = authService.login(request);
+        String refreshToken = jwtUtil.generateRefreshToken(request.getEmail());
+
+        Cookie accessCookie = new Cookie("accessToken", accessToken);
+        accessCookie.setHttpOnly(true);
+        accessCookie.setPath("/");
+        accessCookie.setMaxAge(15 * 60);
+
+        Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
+        refreshCookie.setHttpOnly(true);
+        refreshCookie.setPath("/");
+        refreshCookie.setMaxAge(7 * 24 * 60 * 60);
+
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        return ResponseEntity.ok("Login successful");
+    }
+
+    // ✅ PROFILE
+    // ✅ FIX 3: Uncomment and properly handle null token
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(HttpServletRequest request) {
+
+        String token = extractTokenFromCookies(request, "accessToken");
+
+        // ✅ FIXED: This was commented out — that caused NullPointerException
+        if (token == null || !jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(401).body("Unauthorized: Token missing or expired");
         }
 
-        String email = request.getEmail().toLowerCase().trim();
+        String email = jwtUtil.extractUsername(token);
+        return ResponseEntity.ok(authService.getProfile(email));
+    }
 
-        if (userRepository.findByEmail(email).isPresent()) {
-            response.put("error", "Email already registered");
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    // ✅ REFRESH
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(HttpServletRequest request,
+                                     HttpServletResponse response) {
+
+        String refreshToken = extractTokenFromCookies(request, "refreshToken");
+
+        if (refreshToken == null || !jwtUtil.validateToken(refreshToken)) {
+            return ResponseEntity.status(401).body("Invalid refresh token");
         }
 
-        // ── FIX: always store role as UPPERCASE in DB ─────────────────────────
-        String role = (request.getRole() != null && !request.getRole().isBlank())
-                ? request.getRole().toUpperCase().trim()
-                : "WORKER";
+        String email = jwtUtil.extractUsername(refreshToken);
 
-        String name = (request.getName() != null && !request.getName().isBlank())
-                ? request.getName().trim()
-                : email;
+        String newAccessToken = jwtUtil.generateAccessToken(email);
 
-        // Create User
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(encoder.encode(request.getPassword()));
-        user.setRole(role);
-        userRepository.save(user);
+        Cookie newAccessCookie = new Cookie("accessToken", newAccessToken);
+        newAccessCookie.setHttpOnly(true);
+        newAccessCookie.setPath("/");
+        newAccessCookie.setMaxAge(15 * 60);
 
-        Long workerId = null;
+        response.addCookie(newAccessCookie);
 
-        // Auto-create Worker profile only for WORKER role
-        if ("WORKER".equals(role)) {
-            Worker worker = new Worker();
-            worker.setName(name);
-            worker.setUser(user);
-            worker.setCity("");
-            worker.setPlatform("");
-            workerRepository.save(worker);
-            workerId = worker.getId();
+        return ResponseEntity.ok("Token refreshed");
+    }
+
+    // ✅ LOGOUT
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request,
+                                    HttpServletResponse response) {
+
+        String token = extractTokenFromCookies(request, "accessToken");
+
+        if (token != null && jwtUtil.validateToken(token)) {
+            String email = jwtUtil.extractUsername(token);
+            String message = authService.logout(email);
+
+            Cookie accessCookie = new Cookie("accessToken", null);
+            accessCookie.setMaxAge(0);
+            accessCookie.setPath("/");
+
+            Cookie refreshCookie = new Cookie("refreshToken", null);
+            refreshCookie.setMaxAge(0);
+            refreshCookie.setPath("/");
+
+            response.addCookie(accessCookie);
+            response.addCookie(refreshCookie);
+
+            return ResponseEntity.ok(message);
         }
 
-        String token = jwtUtil.generateToken(email);
+        return ResponseEntity.status(401).body("Unauthorized");
+    }
 
-        response.put("token", token);
-        response.put("role", role);          // ALWAYS uppercase
-        response.put("email", email);
-        response.put("name", name);
-        response.put("workerId", workerId);  // null for ADMIN
+    private String extractTokenFromCookies(HttpServletRequest request, String name) {
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if (cookie.getName().equals(name)) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

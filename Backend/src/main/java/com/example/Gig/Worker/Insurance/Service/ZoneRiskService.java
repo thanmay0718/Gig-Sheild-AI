@@ -17,7 +17,6 @@ public class ZoneRiskService {
                 "HILLY",       85.0    // Landslide, road block risk
         );
 
-        String normalizedZone = zone != null ? zone.trim().toUpperCase() : "";
-        return zoneRiskMap.getOrDefault(normalizedZone, 50.0);
+        return zoneRiskMap.getOrDefault(zone, 50.0);
     }
 }

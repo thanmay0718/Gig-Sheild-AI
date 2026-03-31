@@ -3,24 +3,22 @@ package com.example.Gig.Worker.Insurance.Repository;
 import com.example.Gig.Worker.Insurance.Model.RiskScore;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface RiskScoreRepository extends JpaRepository<RiskScore, Long> {
 
-    // Used by RiskController
+    // Get all risk scores for a worker
     List<RiskScore> findByWorkerId(Long workerId);
 
-    // Used by RiskController - latest score per worker
+    // Get latest risk score for a worker
     Optional<RiskScore> findTopByWorkerIdOrderByCalculatedAtDesc(Long workerId);
 
-    // Used by AdminController analytics
-    long countByRiskLevel(String riskLevel);
+    // Get risk score for a worker for a specific week
+    Optional<RiskScore> findByWorkerIdAndWeekStartDate(Long workerId, LocalDate weekStartDate);
 
-    // Used by admin — all workers at a given risk level
-    List<RiskScore> findByRiskLevel(String riskLevel);
-
-    int countByWorkerIdAndRiskLevel(Long workerId, String high);
+    // Count how many HIGH risk scores a worker has
+    int countByWorkerIdAndRiskLevel(Long workerId, String riskLevel);
 }

@@ -9,12 +9,5 @@ import java.util.List;
 @Repository
 public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
-    // Used by PolicyService
     List<Policy> findByWorkerId(Long workerId);
-
-    // Used by AdminController analytics
-    List<Policy> findByStatus(String status);
-
-    // Used by analytics - count active policies
-    long countByStatus(String status);
 }

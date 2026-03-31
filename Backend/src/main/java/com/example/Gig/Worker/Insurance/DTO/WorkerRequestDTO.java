@@ -1,8 +1,6 @@
 package com.example.Gig.Worker.Insurance.DTO;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,28 +8,36 @@ import lombok.Setter;
 @Setter
 public class WorkerRequestDTO {
 
-    @NotBlank
-    private String name;
-
-    @Email
-    @NotBlank
+    @Email @NotBlank(message = "Email is required to link your account")
     private String email;
 
-    @NotBlank
-    private String city;
+    @NotBlank(message = "Area is required")
+    private String area;
 
-    @NotNull
-    private Long phoneNumber;
+    @NotBlank(message = "Pincode is required")
+    @Pattern(regexp = "^[1-9][0-9]{5}$", message = "Enter a valid 6-digit pincode")
+    private String pincode;
 
-    @NotNull
+    @NotBlank(message = "Address is required")
+    private String address;
+
+    @NotBlank(message = "Delivery segment is required")
+    private String deliverySegment;   // FOOD, ECOMMERCE, GROCERY
+
+    @NotNull(message = "Average income is required")
     private Double avgIncome;
 
-    @NotBlank
-    private String platform;   // "ZOMATO","SWIGGY","AMAZON","ZEPTO","BLINKIT" etc.
+    @NotBlank(message = "Aadhaar number is required")
+    @Pattern(regexp = "^[2-9]{1}[0-9]{11}$", message = "Enter a valid 12-digit Aadhaar number")
+    private String aadhaarNumber;
 
-    @NotBlank
-    private String password;
+    @NotBlank(message = "PAN number is required")
+    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]{1}$", message = "Enter a valid PAN (e.g. ABCDE1234F)")
+    private String panNumber;
 
-    // role — defaults to "WORKER" if not provided
-    private String role;
+    @NotBlank(message = "Bank account number is required")
+    private String bankAccountNumber;
+
+    @NotBlank(message = "Bank name is required")
+    private String bankName;
 }

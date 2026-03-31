@@ -7,27 +7,33 @@ import com.example.Gig.Worker.Insurance.Model.Payment;
 public class PaymentMapper {
 
     public static Payment toEntity(PaymentRequestDTO dto) {
-        Payment payment = new Payment();
-        payment.setWorkerId(dto.getWorkerId());
-        payment.setClaimId(dto.getClaimId());
-        payment.setAmount(dto.getAmount());
-        payment.setPaymentType(dto.getPaymentType());
-        payment.setPaymentMethod(dto.getPaymentMethod());
-        payment.setPaymentStatus("PENDING"); // starts as PENDING, confirmed by mock gateway
-        return payment;
+        return Payment.builder()
+                .workerId(dto.getWorkerId())
+                .policyId(dto.getPolicyId())
+                .amount(dto.getAmount())
+                .paymentType(dto.getPaymentType())
+                .paymentMethod(dto.getPaymentMethod())
+                .currency(dto.getCurrency())
+                .notes(dto.getNotes())
+                .status("PENDING")
+                .build();
     }
 
     public static PaymentResponseDTO toResponseDTO(Payment payment) {
-        PaymentResponseDTO dto = new PaymentResponseDTO();
-        dto.setId(payment.getId());
-        dto.setWorkerId(payment.getWorkerId());
-        dto.setClaimId(payment.getClaimId());
-        dto.setAmount(payment.getAmount());
-        dto.setPaymentType(payment.getPaymentType());
-        dto.setPaymentMethod(payment.getPaymentMethod());
-        dto.setPaymentStatus(payment.getPaymentStatus());
-        // ── FIXED: no more .atStartOfDay() — already LocalDateTime ───────────
-        dto.setPaymentDate(payment.getPaymentDate());
-        return dto;
+        return PaymentResponseDTO.builder()
+                .id(payment.getId())
+                .workerId(payment.getWorkerId())
+                .policyId(payment.getPolicyId())
+                .amount(payment.getAmount())
+                .paymentType(payment.getPaymentType())
+                .paymentMethod(payment.getPaymentMethod())
+                .currency(payment.getCurrency())
+                .status(payment.getStatus())
+                .notes(payment.getNotes())
+                .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
+                .build();
     }
+
+    private PaymentMapper() {}
 }

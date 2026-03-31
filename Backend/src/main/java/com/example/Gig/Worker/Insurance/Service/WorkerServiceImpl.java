@@ -9,11 +9,9 @@ import com.example.Gig.Worker.Insurance.Repository.UserRepository;
 import com.example.Gig.Worker.Insurance.exception.ResourceNotFoundException;
 import com.example.Gig.Worker.Insurance.mapper.WorkerMapper;
 
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,37 +29,22 @@ public class WorkerServiceImpl implements WorkerService {
     @Override
     public WorkerResponseDTO createWorker(WorkerRequestDTO request) {
 
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        // Step 1: Find existing user
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found. Please register first."));
 
-        String email = request.getEmail().toLowerCase();
-        String role  = (request.getRole() != null)
-                ? request.getRole().toUpperCase()
-                : "WORKER";
+        // Step 2: Prevent duplicate worker
+        if (workerRepository.existsByUser(user)) {
+            throw new IllegalStateException("Worker profile already exists");
+        }
 
-        // ── Reuse existing User if email already registered (from /auth/register) ──
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
-            newUser.setEmail(email);
-            newUser.setPassword(encoder.encode(request.getPassword()));
-            newUser.setRole(role);
-            return userRepository.save(newUser);
-        });
+        // Step 3: Create Worker (ONLY worker fields)
+        Worker worker = WorkerMapper.toEntity(request, user);
 
-        // ── Reuse existing Worker profile if already created (from /auth/register) ──
-        Optional<Worker> existingWorker = workerRepository.findByUserId(user.getId());
-        Worker worker = existingWorker.orElseGet(() -> new Worker());
+        Worker savedWorker = workerRepository.save(worker);
 
-        // Update worker fields from request
-        worker.setName(request.getName());
-        worker.setCity(request.getCity());
-        worker.setPlatform(request.getPlatform());
-        worker.setPhoneNumber(request.getPhoneNumber());
-        worker.setAvgIncome(request.getAvgIncome());
-        worker.setUser(user);
-
-        worker = workerRepository.save(worker);
-
-        return WorkerMapper.toResponseDTO(worker);
+        return WorkerMapper.toResponseDTO(savedWorker);
     }
 
     @Override
@@ -82,27 +65,34 @@ public class WorkerServiceImpl implements WorkerService {
 
     @Override
     public WorkerResponseDTO updateWorker(Long id, WorkerRequestDTO request) {
+
         Worker worker = workerRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Worker not found with id: " + id));
 
-        worker.setName(request.getName());
-        worker.setCity(request.getCity());
-        worker.setPlatform(request.getPlatform());
-        worker.setPhoneNumber(request.getPhoneNumber());
+        // Update only worker fields
+        worker.setArea(request.getArea());
+        worker.setPincode(request.getPincode());
+        worker.setAddress(request.getAddress());
+        worker.setDeliverySegment(request.getDeliverySegment());
         worker.setAvgIncome(request.getAvgIncome());
-        // Do NOT reset riskScore on update — keep computed value
-        // worker.setRiskScore(null);  ← removed
+        worker.setAadhaarNumber(request.getAadhaarNumber());
+        worker.setPanNumber(request.getPanNumber());
+        worker.setBankAccountNumber(request.getBankAccountNumber());
+        worker.setBankName(request.getBankName());
 
         Worker updatedWorker = workerRepository.save(worker);
+
         return WorkerMapper.toResponseDTO(updatedWorker);
     }
 
     @Override
     public void deleteWorker(Long id) {
+
         Worker worker = workerRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Worker not found with id: " + id));
+
         workerRepository.delete(worker);
     }
 }

@@ -9,5 +9,4 @@ public class GigWorkerInsuranceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(GigWorkerInsuranceApplication.class, args);
 	}
-
 }

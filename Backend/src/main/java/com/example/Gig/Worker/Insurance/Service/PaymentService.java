@@ -8,6 +8,9 @@ import java.util.List;
 public interface PaymentService {
     PaymentResponseDTO createPayment(PaymentRequestDTO request);
     List<PaymentResponseDTO> getAllPayments();
-    List<PaymentResponseDTO> getPaymentsByWorker(Long workerId);    // worker dashboard
     PaymentResponseDTO getPaymentById(Long id);
+    List<PaymentResponseDTO> getPaymentsByWorker(Long workerId);    // ← new
+    List<PaymentResponseDTO> getPaymentsByPolicy(Long policyId);    // ← new
+    List<PaymentResponseDTO> getPaymentsByStatus(String status);    // ← new
+    PaymentResponseDTO updatePaymentStatus(Long id, String status); // ← new
 }

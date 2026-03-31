@@ -1,32 +1,29 @@
 package com.example.Gig.Worker.Insurance.DTO;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
 public class ClaimRequestDTO {
 
-    private Long workerId;      // optional — null allowed for demo/testing
+    @NotNull(message = "Worker ID is required")
+    @Positive(message = "Worker ID must be a positive number")
+    private Long workerId;
 
-    private Long policyId;      // optional — which policy this claim is against
+    @NotNull(message = "Policy ID is required")
+    @Positive(message = "Policy ID must be a positive number")
+    private Long policyId;
 
-    // ── FIXED: accept BOTH 'title' and 'description' from frontend ────────────
-    // Old WorkerClaims.jsx sends 'title' as the claim title
-    // New WorkerClaims.jsx sends 'description'
-    // We keep both fields and merge in ClaimService
-    private String title;       // old frontend field — kept for compatibility
+    @NotBlank(message = "Description is required")
+    @Size(min = 10, max = 300, message = "Description must be between 10 and 300 characters")
+    private String description;
 
-    private String description; // new frontend field — preferred
+    @NotNull(message = "Amount is required")
+    @Positive(message = "Amount must be greater than 0")
+    @Max(value = 1000000, message = "Amount cannot exceed 10,00,000")
+    private Double amount;
 
-    private double amount;
-
+    @NotBlank(message = "Location is required")
+    @Size(min = 3, max = 100, message = "Location must be between 3 and 100 characters")
     private String location;
-
-    private String disruptionType;  // "WEATHER","FLOOD","RAIN","CURFEW","STRIKE","OTHER"
-
-    // ── Helper: returns whichever description field is populated ──────────────
-    public String getEffectiveDescription() {
-        if (description != null && !description.isBlank()) return description;
-        if (title != null && !title.isBlank()) return title;
-        return null;
-    }
 }

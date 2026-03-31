@@ -4,12 +4,14 @@ import com.example.Gig.Worker.Insurance.DTO.WorkerRequestDTO;
 import com.example.Gig.Worker.Insurance.DTO.WorkerResponseDTO;
 import com.example.Gig.Worker.Insurance.Service.WorkerService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/workers")
+@RequestMapping("/api/v1/workers")         // ✅ plural + versioned
 @CrossOrigin(origins = "http://localhost:9091")
 public class WorkerController {
 
@@ -20,29 +22,35 @@ public class WorkerController {
     }
 
     @PostMapping
-    public WorkerResponseDTO createWorker(@Valid @RequestBody WorkerRequestDTO request){
-        return workerService.createWorker(request);
+    public ResponseEntity<WorkerResponseDTO> createWorker(   // ✅ ResponseEntity for status codes
+                                                             @Valid @RequestBody WorkerRequestDTO request) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)                  // ✅ 201 instead of 200
+                .body(workerService.createWorker(request));
     }
 
     @GetMapping
-    public List<WorkerResponseDTO> getAllWorkers(){
-        return workerService.getAllWorkers();
+    public ResponseEntity<List<WorkerResponseDTO>> getAllWorkers() {
+        return ResponseEntity.ok(workerService.getAllWorkers());
     }
 
     @GetMapping("/{id}")
-    public WorkerResponseDTO getWorkerById(@PathVariable Long id){
-        return workerService.getWorkerById(id);
+    public ResponseEntity<WorkerResponseDTO> getWorkerById(@PathVariable Long id) {
+        return ResponseEntity.ok(workerService.getWorkerById(id));
     }
 
     @PutMapping("/{id}")
-    public WorkerResponseDTO updateWorker(@PathVariable Long id,
-                                          @RequestBody WorkerRequestDTO request){
-        return workerService.updateWorker(id, request);
+    public ResponseEntity<WorkerResponseDTO> updateWorker(
+            @PathVariable Long id,
+            @Valid @RequestBody WorkerRequestDTO request) {  // ✅ Added @Valid
+        return ResponseEntity.ok(workerService.updateWorker(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public String deleteWorker(@PathVariable Long id){
+    public ResponseEntity<String> deleteWorker(@PathVariable Long id) {
         workerService.deleteWorker(id);
-        return "Worker Deleted Successfully";
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body("Worker deleted successfully");        // ✅ lowercase consistent msg
     }
 }

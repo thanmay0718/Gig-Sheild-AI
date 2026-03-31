@@ -1,19 +1,37 @@
 package com.example.Gig.Worker.Insurance.DTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
 import java.time.LocalDate;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class PolicyRequestDTO {
+
+    @NotNull(message = "Worker ID is required")
     private Long workerId;
-    private String policyType;      // "BASIC", "STANDARD", "PREMIUM"
-    private Double premium;         // weekly premium in ₹
-    private Double weeklyPremium;   // alias — frontend may send either
-    private Double coverageAmount;  // max payout per week
+
+    @NotBlank(message = "Policy type is required")
+    private String policyType;
+
+    @NotNull(message = "Premium is required")
+    @Positive
+    private Double premium;
+
+    @NotNull(message = "Coverage amount is required")
+    @Positive
+    private Double coverageAmount;
+
+    @NotNull(message = "Duration is required")
+    @Positive
+    private Integer duration; // IMP
+
+    @NotNull(message = "Start date is required")
     private LocalDate startDate;
+
+    @NotNull(message = "End date is required")
     private LocalDate endDate;
 }

@@ -1,25 +1,36 @@
 package com.example.Gig.Worker.Insurance.DTO;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class WorkerResponseDTO {
 
-    private Long id;             // DB primary key — used as workerId in frontend
-    private String workerId;     // readable ID e.g. "GIG-001"
-    private String name;
-    private String email;        // from linked User
-    private String city;
-    private String platform;
-    private Long phoneNumber;
-    private Double avgIncome;
-    private Double riskScore;
-    private String role;         // "WORKER" or "ADMIN" — from linked User
-    private LocalDateTime createdAt;
+    private Long id;
+    private String username;
+    private String email;
 
-    public WorkerResponseDTO() {}
+    private String area;
+    private String pincode;
+    private String address;
+    private String deliverySegment;
+    private Double avgIncome;
+
+    // Always masked in response — never expose raw values
+    private String aadhaarNumber;       // shown as XXXX-XXXX-1234
+    private String panNumber;           // shown as AB*******F
+    private String bankAccountNumber;   // shown as XXXX-XXXX-5678
+    private String bankName;
+
+    private Double riskScore;
+    private String kycStatus;
+    private LocalDateTime createdAt;
+    private String message;
+    private String role;
+
+    @Builder.Default
+    private boolean loggedIn = false;
 }

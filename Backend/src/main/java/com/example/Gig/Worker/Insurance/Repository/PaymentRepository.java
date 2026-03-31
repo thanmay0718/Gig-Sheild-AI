@@ -8,16 +8,7 @@ import java.util.List;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
-
-    // Used by GET /payments?workerId=  — worker dashboard
     List<Payment> findByWorkerId(Long workerId);
-
-    // Used by analytics — total payouts
-    List<Payment> findByPaymentType(String paymentType);
-
-    // Used by analytics — filter by status
-    List<Payment> findByPaymentStatus(String paymentStatus);
-
-    // Used when a claim is approved — find its linked payment
-    List<Payment> findByClaimId(Long claimId);
+    List<Payment> findByPolicyId(Long policyId);
+    List<Payment> findByStatus(String status);
 }

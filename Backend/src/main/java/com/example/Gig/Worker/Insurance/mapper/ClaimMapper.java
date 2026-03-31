@@ -6,24 +6,23 @@ import com.example.Gig.Worker.Insurance.Model.Claim;
 
 public class ClaimMapper {
 
-    public static Claim toEntity(ClaimRequestDTO dto) {
+    public static Claim toEntity(ClaimRequestDTO dto){
+
         Claim claim = new Claim();
+
         claim.setWorkerId(dto.getWorkerId());
         claim.setPolicyId(dto.getPolicyId());
-
-        // ── FIXED: use whichever field frontend sent (title OR description) ───
-        claim.setDescription(dto.getEffectiveDescription());
-
+        claim.setDescription(dto.getDescription());
         claim.setAmount(dto.getAmount());
-        claim.setLocation(dto.getLocation() != null ? dto.getLocation() : "");
-        claim.setDisruptionType(
-                dto.getDisruptionType() != null ? dto.getDisruptionType() : "WEATHER"
-        );
+        claim.setLocation(dto.getLocation());
+
         return claim;
     }
 
-    public static ClaimResponseDTO toResponseDTO(Claim claim) {
+    public static ClaimResponseDTO toResponseDTO(Claim claim){
+
         ClaimResponseDTO dto = new ClaimResponseDTO();
+
         dto.setId(claim.getId());
         dto.setWorkerId(claim.getWorkerId());
         dto.setPolicyId(claim.getPolicyId());
@@ -31,9 +30,9 @@ public class ClaimMapper {
         dto.setAmount(claim.getAmount());
         dto.setLocation(claim.getLocation());
         dto.setStatus(claim.getStatus());
-        dto.setFraudFlag(claim.getFraudFlag() != null && claim.getFraudFlag());
+        dto.setFraudFlag(claim.getFraudFlag());
         dto.setClaimDate(claim.getClaimDate());
-        dto.setDisruptionType(claim.getDisruptionType());
+
         return dto;
     }
 }
